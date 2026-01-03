@@ -19,10 +19,10 @@ const QUESTIONS = [
   { id: 1, text: "How well does your partner meet your needs?", lowLabel: "Poorly", highLabel: "Extremely Well", reverse: false },
   { id: 2, text: "In general, how satisfied are you with your relationship?", lowLabel: "Unsatisfied", highLabel: "Extremely Satisfied", reverse: false },
   { id: 3, text: "How good is your relationship compared to most?", lowLabel: "Poor", highLabel: "Excellent", reverse: false },
-  { id: 4, text: "How often do you wish you hadn't gotten into this relationship?", lowLabel: "Never", highLabel: "Very Often", reverse: true },
+  { id: 4, text: "How often do you wish you hadn't gotten into this relationship?", lowLabel: "Very Often", highLabel: "Never", reverse: true },
   { id: 5, text: "To what extent has your relationship met your original expectations?", lowLabel: "Hardly at all", highLabel: "Completely", reverse: false },
   { id: 6, text: "How much do you love your partner?", lowLabel: "Not much", highLabel: "Very much", reverse: false },
-  { id: 7, text: "How many problems are there in your relationship?", lowLabel: "Very few", highLabel: "Very many", reverse: true }
+  { id: 7, text: "How many problems are there in your relationship?", lowLabel: "Very many", highLabel: "Very few", reverse: true }
 ];
 
 const patternStyle = {
