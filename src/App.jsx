@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { 
-  Heart, TrendingUp, History, MessageCircle, ArrowRight, LogOut, Sparkles, Activity
+  Heart, TrendingUp, History, MessageCircle, ArrowRight, LogOut, Sparkles, Activity, AlertCircle 
 } from 'lucide-react';
 
 // --- 1. CONFIGURATION ---
@@ -71,8 +71,8 @@ const LandingPage = ({ onJoin }) => {
   // Map each "Secret ID" to a specific Name and the SHARED Couple ID.
   // Both keys must use the SAME 'coupleId' to see each other's data!
   const ACCOUNTS = {
-    "ricky-123":  { name: "Ricky Pramoedya Hermawan",   coupleId: "soon-to-be-a-family" },
-    "honey-456":  { name: "Annisa Nurul Safitri", coupleId: "soon-to-be-a-family" }
+    "ricky-1701":  { name: "Ricky Pramoedya Hermawan",   coupleId: "Calon Suami" },
+    "annisa-2705":  { name: "Annisa Nurul Safitri", coupleId: "Calon Istri" }
   };
 
   const handleSubmit = (e) => {
