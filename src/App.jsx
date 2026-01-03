@@ -96,7 +96,7 @@ const LandingPage = ({ onJoin }) => {
               <Heart className="w-8 h-8 text-white animate-bounce" fill="currentColor" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Our Love Tracker</h1>
-            <p className="text-pink-100 font-medium">Private Couple Access</p>
+            <p className="text-pink-100 font-medium">Ricky & Annisa</p>
           </div>
         </div>
         
