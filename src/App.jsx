@@ -68,8 +68,8 @@ const LandingPage = ({ onJoin }) => {
 
   // 🔐 THE VIP LIST - UPDATE WITH YOUR REAL DETAILS
   const ACCOUNTS = {
-    "ricky-123":  { name: "Ricky",   coupleId: "our-family-2026" },
-    "honey-456":  { name: "Fiancee", coupleId: "our-family-2026" }
+    "ricky-1701":  { name: "Ricky Pramoedya Hermawan",   coupleId: "Calon Suami" },
+    "annisa-2705":  { name: "Annisa Nurul Safitri", coupleId: "Calon Istri" }
   };
 
   const handleSubmit = (e) => {
