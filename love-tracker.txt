@@ -40,7 +40,14 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
-const firebaseConfig = JSON.parse(__firebase_config);
+const firebaseConfig = {
+  apiKey: "AIzaSyBeSd8EIYLEhnE3-Y8XHQcO-7pU7Hw9y_8",
+  authDomain: "love-tracker-c1420.firebaseapp.com",
+  projectId: "love-tracker-c1420",
+  storageBucket: "love-tracker-c1420.firebasestorage.app",
+  messagingSenderId: "605480516358",
+  appId: "1:605480516358:web:83de4d3384a9f8873a3c87",
+  measurementId: "G-BDKRNVE5B2"};
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
