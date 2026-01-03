@@ -61,9 +61,36 @@ const LoadingScreen = () => (
   </div>
 );
 
+// --- REPLACE YOUR LANDING PAGE WITH THIS SMART VERSION ---
+
 const LandingPage = ({ onJoin }) => {
-  const [cId, setCId] = useState('');
-  const [pName, setPName] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [error, setError] = useState('');
+
+  // 🔐 THE VIP LIST
+  // Map each "Secret ID" to a specific Name and the SHARED Couple ID.
+  // Both keys must use the SAME 'coupleId' to see each other's data!
+  const ACCOUNTS = {
+    "ricky-123":  { name: "Ricky Pramoedya Hermawan",   coupleId: "soon-to-be-a-family" },
+    "honey-456":  { name: "Annisa Nurul Safitri", coupleId: "soon-to-be-a-family" }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const cleanCode = accessCode.trim();
+    const user = ACCOUNTS[cleanCode];
+
+    if (user) {
+      // ✅ SUCCESS: Found the user!
+      // We automatically send the correct Name and Shared DB ID.
+      onJoin(user.coupleId, user.name);
+    } else {
+      // ❌ FAIL: Code not recognized
+      setError("❌ Access Denied: Unknown ID.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={patternStyle}>
@@ -76,22 +103,35 @@ const LandingPage = ({ onJoin }) => {
               <Heart className="w-8 h-8 text-white" fill="currentColor" />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">Our Love Tracker</h1>
-            <p className="text-pink-100 font-medium">Continuous Assessment System</p>
+            <p className="text-pink-100 font-medium">Private Couple Access</p>
           </div>
         </div>
         
         <div className="p-8">
-          <form onSubmit={(e) => { e.preventDefault(); if(cId && pName) onJoin(cId, pName); }} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="bg-red-50 text-red-500 text-sm p-3 rounded-xl border border-red-100 flex items-center">
+                <AlertCircle className="w-4 h-4 mr-2" /> {error}
+              </div>
+            )}
+            
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Couple ID</label>
-              <input value={cId} onChange={e => setCId(e.target.value)} placeholder="e.g., fam-1" className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none bg-pink-50/30" required />
+              <label className="block text-sm font-bold text-slate-700 mb-2">Enter Your Personal ID</label>
+              <input 
+                value={accessCode} 
+                onChange={e => setAccessCode(e.target.value)} 
+                placeholder="e.g. ricky-123" 
+                type="password"
+                className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none bg-pink-50/30 font-bold tracking-widest text-center" 
+                required 
+              />
+              <p className="text-xs text-slate-400 mt-2 text-center">
+                Your ID automatically logs you in as <strong>Ricky</strong> or <strong>Fiancee</strong>.
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Your Name</label>
-              <input value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g., Alex" className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none bg-pink-50/30" required />
-            </div>
+            
             <button type="submit" className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-pink-200 flex items-center justify-center space-x-2 transform hover:-translate-y-0.5">
-              <span>Enter Dashboard</span>
+              <span>Unlock Dashboard</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
