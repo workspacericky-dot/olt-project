@@ -4,7 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { 
-  Heart, TrendingUp, History, MessageCircle, ArrowRight, LogOut, Sparkles, Activity
+  Heart, TrendingUp, History, MessageCircle, ArrowRight, LogOut, Sparkles, Activity, AlertCircle, Users, User, UserCheck
 } from 'lucide-react';
 
 // --- 1. CONFIGURATION ---
@@ -61,18 +61,15 @@ const LoadingScreen = () => (
   </div>
 );
 
-// --- REPLACE YOUR LANDING PAGE WITH THIS SMART VERSION ---
-
 const LandingPage = ({ onJoin }) => {
   const [accessCode, setAccessCode] = useState('');
   const [error, setError] = useState('');
 
   // 🔐 THE VIP LIST
-  // Map each "Secret ID" to a specific Name and the SHARED Couple ID.
-  // Both keys must use the SAME 'coupleId' to see each other's data!
   const ACCOUNTS = {
-    "ricky-123":  { name: "Ricky Pramoedya Hermawan",   coupleId: "soon-to-be-a-family" },
-    "honey-456":  { name: "Annisa Nurul Safitri", coupleId: "soon-to-be-a-family" }
+    // CHANGE THESE TO YOUR REAL PREFERRED IDs
+    "ricky-123":  { name: "Ricky",   coupleId: "our-family-2026" },
+    "honey-456":  { name: "Fiancee", coupleId: "our-family-2026" }
   };
 
   const handleSubmit = (e) => {
@@ -83,11 +80,8 @@ const LandingPage = ({ onJoin }) => {
     const user = ACCOUNTS[cleanCode];
 
     if (user) {
-      // ✅ SUCCESS: Found the user!
-      // We automatically send the correct Name and Shared DB ID.
       onJoin(user.coupleId, user.name);
     } else {
-      // ❌ FAIL: Code not recognized
       setError("❌ Access Denied: Unknown ID.");
     }
   };
@@ -202,12 +196,22 @@ const Assessment = ({ onComplete, onCancel }) => {
 };
 
 const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
-  // Sort data carefully by timestamp
-  const sortedData = useMemo(() => {
+  const [filter, setFilter] = useState('all'); // 'all', 'me', 'partner'
+
+  // 1. First, sort all data by date
+  const allSortedData = useMemo(() => {
     return [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   }, [data]);
 
-  const latest = sortedData[sortedData.length - 1];
+  // 2. Then, filter based on selection
+  const visibleData = useMemo(() => {
+    if (filter === 'all') return allSortedData;
+    if (filter === 'me') return allSortedData.filter(d => d.partner_name === partnerName);
+    if (filter === 'partner') return allSortedData.filter(d => d.partner_name !== partnerName);
+    return allSortedData;
+  }, [allSortedData, filter, partnerName]);
+
+  const latest = visibleData.length > 0 ? visibleData[visibleData.length - 1] : null;
   const result = latest ? getAssessmentResult(latest.score) : null;
 
   return (
@@ -233,6 +237,8 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        {/* WELCOME & CHECK-IN */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-pink-100 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Welcome back, {partnerName}</h1>
@@ -242,6 +248,33 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
             <Activity className="w-5 h-5" />
             <span>Check-in Now</span>
           </button>
+        </div>
+
+        {/* --- FILTER TOGGLE MENU --- */}
+        <div className="flex justify-center">
+          <div className="bg-white p-1 rounded-xl border border-pink-100 shadow-sm flex space-x-1">
+            <button 
+              onClick={() => setFilter('all')} 
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center space-x-2 ${filter === 'all' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 hover:bg-pink-50'}`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Both</span>
+            </button>
+            <button 
+              onClick={() => setFilter('me')} 
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center space-x-2 ${filter === 'me' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 hover:bg-pink-50'}`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Me</span>
+            </button>
+            <button 
+              onClick={() => setFilter('partner')} 
+              className={`px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center space-x-2 ${filter === 'partner' ? 'bg-pink-500 text-white shadow-md' : 'text-slate-500 hover:bg-pink-50'}`}
+            >
+              <User className="w-4 h-4" />
+              <span>Partner</span>
+            </button>
+          </div>
         </div>
 
         {/* LATEST RESULT CARD */}
@@ -258,7 +291,9 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
                   <div className={`p-1.5 rounded-full bg-white/50 ${result.color}`}>
                    <Sparkles className="w-4 h-4" />
                   </div>
-                  <span className={`font-bold text-sm uppercase tracking-wide ${result.color}`}>Current Status</span>
+                  <span className={`font-bold text-sm uppercase tracking-wide ${result.color}`}>
+                    {filter === 'partner' ? "Partner's Status" : "Current Status"}
+                  </span>
                 </div>
                 <h2 className={`text-4xl md:text-5xl font-extrabold ${result.color} mb-6 tracking-tight`}>{result.level}</h2>
                 <div className="bg-white/80 rounded-2xl p-6 backdrop-blur-sm border border-white/50 shadow-sm">
@@ -288,24 +323,30 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
             <div className="bg-pink-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
               <TrendingUp className="w-10 h-10 text-pink-400" />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Start Your Journey</h3>
-            <p className="text-slate-500 max-w-sm mx-auto">Complete your first relationship assessment to unlock insights.</p>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">
+              {filter === 'partner' ? "No Data Yet" : "Start Your Journey"}
+            </h3>
+            <p className="text-slate-500 max-w-sm mx-auto">
+              {filter === 'partner' 
+                ? "Your partner hasn't completed an assessment yet." 
+                : "Complete your first relationship assessment to unlock insights."}
+            </p>
           </div>
         )}
 
         {/* ANALYTICS CHART */}
-        {sortedData.length > 1 && (
+        {visibleData.length > 1 && (
           <div className="bg-white rounded-2xl p-6 border border-pink-100 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-slate-800 flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2 text-pink-500" />
-                Satisfaction Trends
+                Satisfaction Trends ({filter === 'all' ? 'Combined' : filter === 'me' ? 'My Trends' : "Partner's Trends"})
               </h3>
             </div>
             
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sortedData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <LineChart data={visibleData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#fdf2f8" />
                   <XAxis 
                     dataKey="date" 
@@ -343,7 +384,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
         )}
 
         {/* HISTORY LIST */}
-        {sortedData.length > 0 && (
+        {visibleData.length > 0 && (
           <div className="bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-pink-50 bg-pink-50/30">
               <h3 className="font-bold text-slate-800 flex items-center">
@@ -352,7 +393,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
               </h3>
             </div>
             <div className="divide-y divide-pink-50">
-              {sortedData.slice().reverse().map((entry, idx) => (
+              {visibleData.slice().reverse().map((entry, idx) => (
                 <div key={entry.id || idx} className="p-4 hover:bg-pink-50/50 transition-colors flex items-center justify-between group">
                   <div className="flex items-center space-x-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${
