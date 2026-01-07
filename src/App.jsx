@@ -35,7 +35,12 @@ const patternStyle = {
 const calculateScore = (answers) => {
   return answers.reduce((total, ans) => {
     const q = QUESTIONS.find(q => q.id === ans.questionId);
-    return total + (q.reverse ? (6 - ans.value) : ans.value);
+    const points = q.reverse ? (6 - ans.value) : ans.value;
+
+    // 🔍 DEBUG LOG
+    console.log(`Q${q.id} Input: ${ans.value} | Reversed? ${q.reverse} | Points Awarded: ${points}`);
+
+    return total + points;
   }, 0);
 };
 
