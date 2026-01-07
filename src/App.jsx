@@ -33,13 +33,15 @@ const patternStyle = {
 
 // --- 3. HELPER FUNCTIONS ---
 const calculateScore = (answers) => {
+  console.log("🧮 CALCULATION STARTING..."); // <--- Look for this!
   return answers.reduce((total, ans) => {
     const q = QUESTIONS.find(q => q.id === ans.questionId);
-    const points = q.reverse ? (6 - ans.value) : ans.value;
-
-    // 🔍 DEBUG LOG
-    console.log(`Q${q.id} Input: ${ans.value} | Reversed? ${q.reverse} | Points Awarded: ${points}`);
-
+    
+    // Check if your fix is actually active here
+    // If you removed the reverse logic, it should just be ans.value
+    const points = ans.value; 
+    
+    console.log(`Q${q.id} (${q.text.substring(0, 10)}...): Input ${ans.value} -> Points ${points}`);
     return total + points;
   }, 0);
 };
