@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend
-} from 'recharts';
-import { 
-  Heart, TrendingUp, History, MessageCircle, ArrowRight, LogOut, Sparkles, Activity, AlertCircle, Users, User, UserCheck
-} from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, SkipBack, SkipForward, Maximize2, Minimize2, Upload, X, Music, Activity, Calendar, Clock, Smile, Frown, Meh, Heart, Award, ArrowRight, Home, Settings, LogOut, Users, User, UserCheck, Sparkles, MessageCircle, TrendingUp, History, Menu, ChevronRight } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import confetti from 'canvas-confetti';
+import LyricsVisualizer from './features/Visualizer/LyricsVisualizer';
+import CursorAnimation from './components/CursorAnimation';
+import BGMusic from './components/BGMusic';
 
 // --- 1. CONFIGURATION ---
 const supabase = createClient(
@@ -36,11 +35,11 @@ const calculateScore = (answers) => {
   console.log("🧮 CALCULATION STARTING..."); // <--- Look for this!
   return answers.reduce((total, ans) => {
     const q = QUESTIONS.find(q => q.id === ans.questionId);
-    
+
     // Check if your fix is actually active here
     // If you removed the reverse logic, it should just be ans.value
-    const points = ans.value; 
-    
+    const points = ans.value;
+
     console.log(`Q${q.id} (${q.text.substring(0, 10)}...): Input ${ans.value} -> Points ${points}`);
     return total + points;
   }, 0);
@@ -75,8 +74,8 @@ const LandingPage = ({ onJoin }) => {
 
   // 🔐 THE VIP LIST - UPDATE WITH YOUR REAL DETAILS
   const ACCOUNTS = {
-    "ricky-1701":  { name: "Ricky Pramoedya Hermawan",   coupleId: "YUK KAPAN NIKAH?" },
-    "annisa-2705":  { name: "Annisa Nurul Safitri", coupleId: "YUK KAPAN NIKAH?" }
+    "ricky-1701": { name: "Ricky Pramoedya Hermawan", coupleId: "YUK KAPAN NIKAH?" },
+    "annisa-2705": { name: "Annisa Nurul Safitri", coupleId: "YUK KAPAN NIKAH?" }
   };
 
   const handleSubmit = (e) => {
@@ -96,9 +95,9 @@ const LandingPage = ({ onJoin }) => {
     <div className="min-h-screen flex items-center justify-center p-4" style={patternStyle}>
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-pink-100 transform transition-all hover:scale-105 duration-500">
         <div className="bg-gradient-to-r from-pink-500 to-rose-500 p-8 text-center relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-24 h-24 bg-white/10 rounded-full -translate-x-8 -translate-y-8 animate-pulse"></div>
-           <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-12 translate-y-12 animate-pulse delay-700"></div>
-           <div className="relative z-10">
+          <div className="absolute top-0 left-0 w-24 h-24 bg-white/10 rounded-full -translate-x-8 -translate-y-8 animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full translate-x-12 translate-y-12 animate-pulse delay-700"></div>
+          <div className="relative z-10">
             <div className="mx-auto bg-white/25 w-16 h-16 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm shadow-inner">
               <Heart className="w-8 h-8 text-white animate-bounce" fill="currentColor" />
             </div>
@@ -106,7 +105,7 @@ const LandingPage = ({ onJoin }) => {
             <p className="text-pink-100 font-medium">Ricky & Annisa</p>
           </div>
         </div>
-        
+
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
@@ -114,19 +113,19 @@ const LandingPage = ({ onJoin }) => {
                 <AlertCircle className="w-4 h-4 mr-2" /> {error}
               </div>
             )}
-            
+
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Enter Your Personal ID</label>
-              <input 
-                value={accessCode} 
-                onChange={e => setAccessCode(e.target.value)} 
-                placeholder="e.g. ricky-123" 
+              <input
+                value={accessCode}
+                onChange={e => setAccessCode(e.target.value)}
+                placeholder="e.g. ricky-123"
                 type="password"
-                className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none bg-pink-50/30 font-bold tracking-widest text-center transition-all" 
-                required 
+                className="w-full px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none bg-pink-50/30 font-bold tracking-widest text-center transition-all"
+                required
               />
             </div>
-            
+
             <button type="submit" className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-pink-200 flex items-center justify-center space-x-2 transform hover:-translate-y-0.5 active:scale-95">
               <span>Unlock Dashboard</span>
               <ArrowRight className="w-5 h-5" />
@@ -141,7 +140,7 @@ const LandingPage = ({ onJoin }) => {
 const Assessment = ({ onComplete, onCancel }) => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState([]);
-  
+
   const handleAnswer = (val) => {
     const newAnswers = [...answers, { questionId: QUESTIONS[step].id, value: val }];
     if (step < QUESTIONS.length - 1) {
@@ -198,14 +197,14 @@ const Assessment = ({ onComplete, onCancel }) => {
   );
 };
 
-const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
-  const [filter, setFilter] = useState('all'); 
+const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisualizer }) => {
+  const [filter, setFilter] = useState('all');
 
   // --- DATA PROCESSING FOR GRAPH ---
   const chartData = useMemo(() => {
     // 1. Group data by Date
     const groupedByDate = {};
-    
+
     // Sort raw data first
     const sortedRaw = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -244,6 +243,13 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
             <span className="font-bold text-slate-800 text-lg hidden sm:inline tracking-tight">Our Love Tracker</span>
           </div>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={onOpenVisualizer}
+              className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl font-medium shadow-md shadow-purple-200 hover:shadow-lg hover:shadow-purple-300 transition-all transform hover:-translate-y-0.5"
+            >
+              <Heart className="w-4 h-4 fill-current" />
+              <span className="hidden sm:inline">HBD Sayang</span>
+            </button>
             <div className="text-right hidden sm:block">
               <p className="text-sm font-bold text-slate-800">{coupleId}</p>
               <p className="text-xs text-pink-500 font-medium">Hi, {partnerName}</p>
@@ -256,7 +262,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in-up">
-        
+
         {/* WELCOME & CHECK-IN */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-pink-100 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-transform hover:shadow-md">
           <div>
@@ -288,15 +294,15 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
         {latest ? (
           <div className={`rounded-3xl p-8 border-2 ${result.border} ${result.bg} shadow-sm transition-all relative overflow-hidden transform hover:scale-[1.01] duration-300`}>
             {result.level === 'High Satisfaction' && (
-               <div className="absolute top-0 right-0 -mt-10 -mr-10 text-pink-200/50 animate-pulse">
-                 <Heart size={200} fill="currentColor" />
-               </div>
+              <div className="absolute top-0 right-0 -mt-10 -mr-10 text-pink-200/50 animate-pulse">
+                <Heart size={200} fill="currentColor" />
+              </div>
             )}
             <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-3">
                   <div className={`p-1.5 rounded-full bg-white/50 ${result.color}`}>
-                   <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4" />
                   </div>
                   <span className={`font-bold text-sm uppercase tracking-wide ${result.color}`}>
                     {filter === 'partner' ? "Partner's Status" : "Current Status"}
@@ -314,7 +320,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
               <div className="bg-white rounded-3xl p-8 shadow-md min-w-[220px] flex flex-col items-center justify-center border-2 border-white/50">
                 <span className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Score</span>
                 <div className="relative">
-                   <span className={`text-6xl font-black ${result.color}`}>{latest.score}</span>
+                  <span className={`text-6xl font-black ${result.color}`}>{latest.score}</span>
                 </div>
                 <span className="text-slate-400 text-xs font-bold mt-1 uppercase">out of 35</span>
                 <div className="mt-4 pt-4 border-t border-slate-100 w-full text-center">
@@ -348,7 +354,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
                 Growth & Unity Graph
               </h3>
             </div>
-            
+
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -357,10 +363,10 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={30} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
                   <Legend verticalAlign="top" height={36} iconType="circle" />
-                  
+
                   {/* The COMBINED Line (Thick & Green) */}
                   <Line name="Combined Strength" type="monotone" dataKey="combined" stroke="#10b981" strokeWidth={4} dot={{ fill: '#10b981', r: 4 }} activeDot={{ r: 8 }} />
-                  
+
                   {/* Individual Lines (Thinner) */}
                   <Line name={partnerName} type="monotone" dataKey={partnerName} stroke="#ec4899" strokeWidth={2} dot={{ fill: '#ec4899', r: 3 }} connectNulls />
                   {/* We dynamically find the partner's name from data keys excluding date/combined/me */}
@@ -387,11 +393,10 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout }) => {
               {historyData.slice().reverse().map((entry, idx) => (
                 <div key={entry.id || idx} className="p-4 hover:bg-pink-50/50 transition-colors flex items-center justify-between group">
                   <div className="flex items-center space-x-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${
-                      entry.score >= 22 ? 'bg-pink-100 text-pink-600' :
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${entry.score >= 22 ? 'bg-pink-100 text-pink-600' :
                       entry.score >= 15 ? 'bg-purple-100 text-purple-600' :
-                      'bg-slate-100 text-slate-600'
-                    }`}>
+                        'bg-slate-100 text-slate-600'
+                      }`}>
                       {entry.score}
                     </div>
                     <div>
@@ -446,27 +451,27 @@ export default function App() {
 
     const score = calculateScore(answers);
     const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    
+
     // Optimistic Update
-    const tempEntry = { 
-      id: Date.now(), 
-      couple_id: coupleId, 
-      partner_name: partnerName, 
-      score, 
-      date, 
+    const tempEntry = {
+      id: Date.now(),
+      couple_id: coupleId,
+      partner_name: partnerName,
+      score,
+      date,
       created_at: new Date().toISOString()
     };
     setAssessments(prev => [...prev, tempEntry]);
 
     // Send to Supabase
-    await supabase.from('assessments').insert([{ 
-      couple_id: coupleId, 
-      partner_name: partnerName, 
-      score, 
-      answers, 
-      date 
+    await supabase.from('assessments').insert([{
+      couple_id: coupleId,
+      partner_name: partnerName,
+      score,
+      answers,
+      date
     }]);
-    
+
     await fetchData();
     setView('dashboard');
   };
@@ -485,9 +490,20 @@ export default function App() {
     setAssessments([]);
   };
 
-  if (loading) return <LoadingScreen />;
-  if (!coupleId) return <LandingPage onJoin={handleLogin} />;
-  if (view === 'assessment') return <Assessment onComplete={handleSave} onCancel={() => setView('dashboard')} />;
-  
-  return <Dashboard coupleId={coupleId} partnerName={partnerName} data={assessments} onStart={() => setView('assessment')} onLogout={handleLogout} />;
+  const renderContent = () => {
+    if (loading) return <LoadingScreen />;
+    if (!coupleId) return <LandingPage onJoin={handleLogin} />;
+    if (view === 'assessment') return <Assessment onComplete={handleSave} onCancel={() => setView('dashboard')} />;
+    if (view === 'visualizer') return <LyricsVisualizer onBack={() => setView('dashboard')} coupleId={coupleId} partnerName={partnerName} />;
+
+    return <Dashboard coupleId={coupleId} partnerName={partnerName} data={assessments} onStart={() => setView('assessment')} onLogout={handleLogout} onOpenVisualizer={() => setView('visualizer')} />;
+  };
+
+  return (
+    <>
+      <CursorAnimation />
+      <BGMusic isPlaying={!!coupleId && view === 'dashboard'} />
+      {renderContent()}
+    </>
+  );
 }
