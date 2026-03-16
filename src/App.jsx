@@ -199,26 +199,51 @@ const Assessment = ({ onComplete, onCancel }) => {
 
 const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisualizer }) => {
   const [filter, setFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
 
   // --- DATA PROCESSING FOR GRAPH ---
   const chartData = useMemo(() => {
-    // 1. Group data by Date
-    const groupedByDate = {};
-
-    // Sort raw data first
+    // Sort raw data chronologically
     const sortedRaw = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
+    
+    // Group entries exactly by date to process them day-by-day
+    const groupedByDateMap = new Map();
     sortedRaw.forEach(entry => {
-      if (!groupedByDate[entry.date]) {
-        groupedByDate[entry.date] = { date: entry.date, combined: 0 };
+      if (!groupedByDateMap.has(entry.date)) {
+        groupedByDateMap.set(entry.date, []);
       }
-      // Add individual score (e.g., "Ricky": 25)
-      groupedByDate[entry.date][entry.partner_name] = entry.score;
-      // Add to total
-      groupedByDate[entry.date].combined += entry.score;
+      groupedByDateMap.get(entry.date).push(entry);
     });
 
-    return Object.values(groupedByDate);
+    const dailyData = [];
+    const latestScores = {}; // Tracks the most recent score for each person over time
+
+    groupedByDateMap.forEach((entries, date) => {
+      const point = { date };
+
+      // Update the latest known scores with any submissions from this specific day
+      entries.forEach(entry => {
+        latestScores[entry.partner_name] = entry.score;
+      });
+
+      // Calculate the combined strength using the most recent score of both partners
+      point.combined = Object.values(latestScores).reduce((sum, score) => sum + score, 0);
+
+      // To prevent dots from connecting across days without submissions
+      // we only plot individual dots on days they actually submitted
+      entries.forEach(entry => {
+        point[entry.partner_name] = entry.score;
+      });
+
+      dailyData.push(point);
+    });
+
+    return dailyData;
   }, [data]);
 
   // --- FILTERING FOR HISTORY LIST ---
@@ -228,6 +253,10 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
     if (filter === 'partner') return sorted.filter(d => d.partner_name !== partnerName);
     return sorted;
   }, [data, filter, partnerName]);
+
+  const reversedHistory = useMemo(() => [...historyData].reverse(), [historyData]);
+  const totalPages = Math.ceil(reversedHistory.length / itemsPerPage);
+  const currentHistoryPage = reversedHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const latest = historyData.length > 0 ? historyData[historyData.length - 1] : null;
   const result = latest ? getAssessmentResult(latest.score) : null;
@@ -390,7 +419,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
               </h3>
             </div>
             <div className="divide-y divide-pink-50">
-              {historyData.slice().reverse().map((entry, idx) => (
+              {currentHistoryPage.map((entry, idx) => (
                 <div key={entry.id || idx} className="p-4 hover:bg-pink-50/50 transition-colors flex items-center justify-between group">
                   <div className="flex items-center space-x-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg shadow-sm ${entry.score >= 22 ? 'bg-pink-100 text-pink-600' :
@@ -407,6 +436,27 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
                 </div>
               ))}
             </div>
+            {totalPages > 1 && (
+              <div className="p-4 border-t border-pink-50 flex items-center justify-between bg-white text-sm">
+                <button 
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${currentPage === 1 ? 'text-slate-300 cursor-not-allowed' : 'text-pink-600 hover:bg-pink-50'}`}
+                >
+                  Previous
+                </button>
+                <span className="text-slate-500 font-semibold text-center">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-lg font-bold transition-all ${currentPage === totalPages ? 'text-slate-300 cursor-not-allowed' : 'text-pink-600 hover:bg-pink-50'}`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         )}
       </main>
