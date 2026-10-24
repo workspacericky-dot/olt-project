@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, SkipBack, SkipForward, Maximize2, Minimize2, Upload, X, Music, Activity, Calendar, Clock, Smile, Frown, Meh, Heart, Award, ArrowRight, Home, Settings, LogOut, Users, User, UserCheck, Sparkles, MessageCircle, TrendingUp, History, Menu, ChevronRight } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, SkipBack, SkipForward, Maximize2, Minimize2, Upload, X, Music, Activity, Calendar, Clock, Smile, Frown, Meh, Heart, Award, ArrowRight, Home, Settings, LogOut, Users, User, UserCheck, Sparkles, MessageCircle, TrendingUp, History, Menu, ChevronRight, MailOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import confetti from 'canvas-confetti';
 import LyricsVisualizer from './features/Visualizer/LyricsVisualizer';
 import CursorAnimation from './components/CursorAnimation';
 import BGMusic from './components/BGMusic';
+
+const SajakPage = lazy(() => import('./features/Sajak/SajakPage'));
 
 // --- 1. CONFIGURATION ---
 const supabase = createClient(
@@ -131,6 +133,11 @@ const LandingPage = ({ onJoin }) => {
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
+          <a href="#/sajak" className="mt-6 flex items-center gap-4 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left transition-all hover:bg-pink-100 hover:shadow-md focus-visible:outline-pink-500">
+            <span className="relative rounded-xl bg-white p-3 text-pink-500 shadow-sm"><MailOpen className="h-5 w-5" /><Heart className="absolute left-1/2 top-[11px] h-2.5 w-2.5 -translate-x-1/2 fill-pink-500 stroke-white stroke-[1.5]" /></span>
+            <span className="flex-1"><span className="block font-bold text-slate-800">Sajak untukmu</span><span className="mt-1 block text-xs text-slate-500">Kalau ada waktu, sempetin baca ya sayang</span></span>
+            <ChevronRight className="h-5 w-5 text-pink-400" />
+          </a>
         </div>
       </div>
     </div>
@@ -465,7 +472,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
 };
 
 // --- 5. MAIN APP CONTROLLER ---
-export default function App() {
+function TrackerApp() {
   const [loading, setLoading] = useState(true);
   const [coupleId, setCoupleId] = useState(() => localStorage.getItem('c_id') || '');
   const [partnerName, setPartnerName] = useState(() => localStorage.getItem('p_name') || '');
@@ -556,4 +563,16 @@ export default function App() {
       {renderContent()}
     </>
   );
+}
+
+export default function App() {
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const updateHash = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', updateHash);
+    return () => window.removeEventListener('hashchange', updateHash);
+  }, []);
+  return hash === '#/sajak'
+    ? <Suspense fallback={<LoadingScreen />}><SajakPage /></Suspense>
+    : <TrackerApp />;
 }
