@@ -10,6 +10,8 @@ dibagikan dan dimuat ulang tanpa konfigurasi rewrite server tambahan.
 - Setiap kalimat tampil selama 10 detik.
   Jeda mempertahankan progres kalimat; sebelumnya/berikutnya memulai durasi
   kalimat baru. Musik menjadi latar berulang, bukan sinkronisasi lirik.
+- Setelah kalimat terakhir selesai, volume musik turun perlahan selama 4,5 detik
+  sebelum audio berhenti. Putar ulang mengembalikan volume pilihan pembaca.
 - Berpindah tab menjeda pembacaan dan audio. Keluar dari halaman menghentikan
   audio. Tombol lanjut diperlukan untuk melanjutkan setelah kembali ke tab.
 - Preferensi sistem `prefers-reduced-motion` menonaktifkan animasi dekoratif

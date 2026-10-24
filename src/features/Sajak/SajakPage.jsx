@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, Heart, Music2, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import poem from './poem.txt?raw';
 import music from './love-me.mp3';
@@ -10,10 +10,15 @@ const lines = poem.trim().split(/\r?\n\s*\r?\n/).flatMap((stanza, chapter) =>
     .map(text => ({ text, chapter, duration: 10000 }))
 );
 const totalDuration = lines.reduce((sum, line) => sum + line.duration, 0);
+const FADE_OUT_DURATION = 4500;
 
 export default function SajakPage() {
   const audio = useRef(null);
   const elapsed = useRef(0);
+  const fadeFrame = useRef(null);
+  const fadingOut = useRef(false);
+  const fadeFactor = useRef(1);
+  const volumeRef = useRef(0.45);
   const [index, setIndex] = useState(0);
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -24,6 +29,33 @@ export default function SajakPage() {
   const [audioError, setAudioError] = useState(false);
   const current = lines[index];
 
+  const cancelFadeOut = useCallback(() => {
+    if (fadeFrame.current !== null) cancelAnimationFrame(fadeFrame.current);
+    fadeFrame.current = null;
+    if (fadingOut.current) audio.current?.pause();
+    fadingOut.current = false;
+    fadeFactor.current = 1;
+    if (audio.current) audio.current.volume = volumeRef.current;
+  }, []);
+
+  const fadeOutMusic = useCallback(() => {
+    cancelFadeOut();
+    fadingOut.current = true;
+    const startedAt = performance.now();
+    const fade = (now) => {
+      const remaining = Math.max(0, 1 - (now - startedAt) / FADE_OUT_DURATION);
+      fadeFactor.current = remaining * remaining;
+      audio.current.volume = volumeRef.current * fadeFactor.current;
+      if (remaining > 0) fadeFrame.current = requestAnimationFrame(fade);
+      else {
+        audio.current.pause();
+        fadingOut.current = false;
+        fadeFrame.current = null;
+      }
+    };
+    fadeFrame.current = requestAnimationFrame(fade);
+  }, [cancelFadeOut]);
+
   useEffect(() => {
     const previous = document.title;
     document.title = 'Sajak untukmu · Our Love Tracker';
@@ -32,13 +64,13 @@ export default function SajakPage() {
 
   useEffect(() => {
     const player = audio.current;
-    if (!playing) player.pause();
+    if (!playing && !fadingOut.current) player.pause();
   }, [playing]);
 
   useEffect(() => {
     const player = audio.current;
-    return () => player.pause();
-  }, []);
+    return () => { cancelFadeOut(); player.pause(); };
+  }, [cancelFadeOut]);
 
   useEffect(() => {
     if (!playing) return;
@@ -52,20 +84,26 @@ export default function SajakPage() {
         elapsed.current = 0;
         setProgress(0);
         if (index < lines.length - 1) setIndex(i => i + 1);
-        else { setPlaying(false); setFinished(true); }
+        else { fadeOutMusic(); setPlaying(false); setFinished(true); }
       }
     }, 80);
     return () => window.clearInterval(timer);
-  }, [playing, index, current.duration]);
+  }, [playing, index, current.duration, fadeOutMusic]);
 
   useEffect(() => {
-    const onHidden = () => { if (document.hidden) setPlaying(false); };
+    const onHidden = () => {
+      if (document.hidden) {
+        cancelFadeOut();
+        audio.current.pause();
+        setPlaying(false);
+      }
+    };
     document.addEventListener('visibilitychange', onHidden);
     return () => document.removeEventListener('visibilitychange', onHidden);
-  }, []);
+  }, [cancelFadeOut]);
 
   const playAudio = () => {
-    audio.current.volume = volume;
+    cancelFadeOut();
     audio.current.play().then(() => setAudioError(false)).catch(() => setAudioError(true));
   };
   const start = () => {
@@ -74,6 +112,7 @@ export default function SajakPage() {
     playAudio();
   };
   const move = (next) => {
+    cancelFadeOut();
     elapsed.current = 0;
     setProgress(0);
     setFinished(false);
@@ -142,7 +181,7 @@ export default function SajakPage() {
       </main>
       <footer className="sajak-footer">
         <span><BookOpen size={14} /> Ricky & Annisa</span>
-        <div className="sajak-audio"><Music2 size={14} /><span>Love Me · Yiruma</span>{started && <input aria-label="Volume musik" type="range" min="0" max="1" step="0.05" value={volume} onChange={e => { const value = Number(e.target.value); setVolume(value); audio.current.volume = value; }} />}</div>
+        <div className="sajak-audio"><Music2 size={14} /><span>Love Me · Yiruma</span>{started && <input aria-label="Volume musik" type="range" min="0" max="1" step="0.05" value={volume} onChange={e => { const value = Number(e.target.value); setVolume(value); volumeRef.current = value; audio.current.volume = value * fadeFactor.current; }} />}</div>
       </footer>
       {audioError && <div className="sajak-error" role="status">Musik belum dapat diputar. Kamu tetap bisa membaca. <button onClick={playAudio}>Coba musik lagi</button></div>}
     </div>
