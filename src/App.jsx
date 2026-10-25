@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Play, Pause, RotateCcw, Volume2, VolumeX, SkipBack, SkipForward, Maximize2, Minimize2, Upload, X, Music, Activity, Calendar, Clock, Smile, Frown, Meh, Heart, Award, ArrowRight, Home, Settings, LogOut, Users, User, UserCheck, Sparkles, MessageCircle, TrendingUp, History, Menu, ChevronRight, MailOpen } from 'lucide-react';
+import { Play, Pause, RotateCcw, Volume2, VolumeX, SkipBack, SkipForward, Maximize2, Minimize2, Upload, X, Music, Activity, Calendar, Clock, Smile, Frown, Meh, Heart, Award, ArrowRight, Home, Settings, LogOut, Users, User, UserCheck, Sparkles, MessageCircle, TrendingUp, History, Menu, ChevronRight, BookOpen, MailOpen, Lock, Unlock, Send, Loader2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Legend } from 'recharts';
 import confetti from 'canvas-confetti';
 import LyricsVisualizer from './features/Visualizer/LyricsVisualizer';
 import CursorAnimation from './components/CursorAnimation';
 import BGMusic from './components/BGMusic';
+import { startCoachSession, sendCoachMessage } from './utils/geminiCoach';
 
 const SajakPage = lazy(() => import('./features/Sajak/SajakPage'));
 
@@ -204,7 +205,168 @@ const Assessment = ({ onComplete, onCancel }) => {
   );
 };
 
-const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisualizer }) => {
+const JournalWriter = ({ onComplete, onCancel, partnerName, score, recentJournals }) => {
+  const [phase, setPhase] = useState('chat'); // 'chat' | 'write'
+  const [chatHistory, setChatHistory] = useState([]);
+  const [userInput, setUserInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [writingGuide, setWritingGuide] = useState('');
+  const [content, setContent] = useState('');
+  const chatEndRef = React.useRef(null);
+
+  // Start the coaching session automatically on mount
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      const result = await startCoachSession(partnerName, score, recentJournals);
+      setChatHistory(result.history);
+      if (result.isDone) {
+        setWritingGuide(result.reply);
+        setPhase('write');
+      }
+      setIsLoading(false);
+    };
+    init();
+  }, []);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isLoading) return;
+    const newHistory = [...chatHistory, { role: 'user', text: userInput.trim() }];
+    setChatHistory(newHistory);
+    setUserInput('');
+    setIsLoading(true);
+
+    const result = await sendCoachMessage(newHistory, partnerName, score, recentJournals);
+    const updatedHistory = [...newHistory, { role: 'coach', text: result.reply }];
+    setChatHistory(updatedHistory);
+    
+    if (result.isDone) {
+      setWritingGuide(result.reply);
+      // Auto-transition to write phase after a short delay
+      setTimeout(() => setPhase('write'), 1500);
+    }
+    setIsLoading(false);
+  };
+
+  const handleSubmitJournal = (e) => {
+    e.preventDefault();
+    if (content.trim()) {
+      onComplete(content.trim());
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-white z-50 flex flex-col" style={patternStyle}>
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-pink-100 px-6 py-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-slate-800 flex items-center">
+          <Sparkles className="w-6 h-6 text-indigo-500 mr-2" />
+          {phase === 'chat' ? 'AI Coach' : 'Tell Your Story'}
+        </h2>
+        <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 font-medium px-3 py-1 rounded-lg hover:bg-slate-100 transition-colors text-sm">
+          Cancel
+        </button>
+      </div>
+
+      {phase === 'chat' ? (
+        /* === CHAT PHASE === */
+        <div className="flex-1 flex flex-col max-w-2xl w-full mx-auto">
+          {/* Chat messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                  msg.role === 'user' 
+                    ? 'bg-pink-500 text-white rounded-br-sm' 
+                    : 'bg-indigo-50 text-slate-700 border border-indigo-100 rounded-bl-sm'
+                }`}>
+                  {msg.role === 'coach' && <Sparkles className="w-4 h-4 text-indigo-400 inline mr-1 mb-0.5" />}
+                  <span className="whitespace-pre-wrap">{msg.text}</span>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-indigo-50 border border-indigo-100 px-4 py-3 rounded-2xl rounded-bl-sm">
+                  <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Chat input */}
+          {!writingGuide && (
+            <div className="border-t border-pink-100 bg-white/80 backdrop-blur-md px-4 py-3">
+              <div className="flex items-center space-x-3 max-w-2xl mx-auto">
+                <input
+                  type="text"
+                  value={userInput}
+                  onChange={e => setUserInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                  placeholder="Ketik jawabanmu..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none text-sm font-medium"
+                  disabled={isLoading}
+                  autoFocus
+                />
+                <button onClick={handleSendMessage} disabled={!userInput.trim() || isLoading} className="bg-pink-500 hover:bg-pink-600 text-white p-3 rounded-xl disabled:opacity-50 transition-all shadow-md shadow-pink-200 transform hover:-translate-y-0.5 active:scale-95">
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="text-center mt-2">
+                <button onClick={() => setPhase('write')} className="text-xs text-slate-400 hover:text-indigo-500 transition-colors">
+                  Skip — langsung nulis aja →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* === WRITE PHASE === */
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <div className="w-full max-w-lg bg-white/90 p-8 rounded-3xl shadow-xl border border-pink-100 backdrop-blur-md animate-fade-in-up">
+            {/* Writing Guide from Coach */}
+            {writingGuide && (
+              <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-xl mb-6 shadow-sm">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Sparkles className="w-5 h-5 text-indigo-500" />
+                  <p className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Coach's Suggestion</p>
+                </div>
+                <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-wrap">{writingGuide}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitJournal}>
+              <textarea
+                className="w-full h-48 p-4 rounded-xl border border-pink-200 focus:ring-4 focus:ring-pink-100 outline-none resize-none mb-6 text-slate-700 placeholder-slate-400 font-medium leading-relaxed shadow-inner"
+                placeholder="Tulis ceritamu hari ini..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                autoFocus
+              />
+              <div className="flex justify-between items-center">
+                <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 font-medium px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={!content.trim()} className="px-6 py-3 rounded-xl font-bold bg-pink-500 hover:bg-pink-600 text-white disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-pink-200 transition-all flex items-center transform hover:-translate-y-0.5 active:scale-95">
+                  <span>Lock Entry</span>
+                  <Lock className="w-4 h-4 ml-2" />
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Dashboard = ({ coupleId, partnerName, data, journals, onStart, onWriteJournal, onLogout, onOpenVisualizer }) => {
   const [filter, setFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -247,11 +409,17 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
         point[entry.partner_name] = entry.score;
       });
 
+      // Add the day's journals into the data point so the Tooltip can access them
+      const daysJournals = journals ? journals.filter(j => j.date === date) : [];
+      if (daysJournals.length > 0) {
+        point.journals = daysJournals;
+      }
+
       dailyData.push(point);
     });
 
     return dailyData;
-  }, [data]);
+  }, [data, journals]);
 
   // --- FILTERING FOR HISTORY LIST ---
   const historyData = useMemo(() => {
@@ -267,6 +435,58 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
 
   const latest = historyData.length > 0 ? historyData[historyData.length - 1] : null;
   const result = latest ? getAssessmentResult(latest.score) : null;
+
+  // --- CUSTOM GRAPH TOOLTIP ---
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      // Find the specific data point we are hovering over
+      const dataPoint = payload[0].payload;
+      
+      return (
+        <div className="bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-pink-100 max-w-sm animate-fade-in">
+          <p className="font-bold text-slate-800 text-lg mb-4 border-b border-pink-50 pb-2">{label}</p>
+          
+          <div className="space-y-4">
+            {payload.map((entry, index) => {
+              // Find if this person wrote a journal entry today
+              // Journals are attached to the dataPoint object in chartData memo
+              const journal = dataPoint.journals?.find(j => 
+                (entry.name === 'Combined Strength' ? false : j.partner_name === entry.name)
+              );
+
+              return (
+                <div key={`item-${index}`} className="flex flex-col">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm" style={{ color: entry.color }}>
+                      {entry.name}
+                    </span>
+                    <span className="font-black text-sm" style={{ color: entry.color }}>
+                      {entry.value}
+                    </span>
+                  </div>
+                  
+                  {journal && (
+                    <div className="mt-1 ml-2 border-l-2 border-pink-100 pl-3">
+                      <p className="text-xs text-slate-500 italic leading-relaxed line-clamp-2">
+                        "{journal.content}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // --- JOURNAL DATA ---
+  const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const todaysJournals = journals ? journals.filter(j => j.date === today) : [];
+  const myJournal = todaysJournals.find(j => j.partner_name === partnerName);
+  const partnerJournal = todaysJournals.find(j => j.partner_name !== partnerName);
 
   return (
     <div className="min-h-screen pb-12" style={patternStyle}>
@@ -309,6 +529,77 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
             <Activity className="w-5 h-5" />
             <span>Check-in Now</span>
           </button>
+        </div>
+
+        {/* THE DAILY VAULT - RECIPROCAL REVEAL */}
+        <div className="bg-white rounded-2xl border border-pink-100 shadow-sm overflow-hidden relative group transition-all hover:shadow-md">
+          <div className="p-5 border-b border-pink-50 bg-gradient-to-r from-purple-50/50 to-pink-50/50">
+            <h3 className="font-bold text-slate-800 flex items-center justify-between">
+              <span className="flex items-center"><BookOpen className="w-5 h-5 mr-2 text-pink-500" /> The Daily Vault</span>
+              <span className="text-xs bg-white px-3 py-1 rounded-full text-pink-600 font-bold shadow-sm">{today}</span>
+            </h3>
+          </div>
+          <div className="p-6">
+            {!myJournal && !partnerJournal && (
+              <div className="text-center py-4">
+                <p className="text-slate-500 mb-6 font-medium">The vault is empty today. Let the AI coach help you tell your story!</p>
+                <button onClick={onWriteJournal} className="bg-gradient-to-r from-indigo-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-200 transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center mx-auto space-x-2">
+                  <Sparkles className="w-5 h-5" />
+                  <span>Tell Your Story Today!</span>
+                </button>
+              </div>
+            )}
+            {!myJournal && partnerJournal && (
+              <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-purple-500/5 blur-xl"></div>
+                <div className="relative z-10 w-16 h-16 bg-white shrink-0 shadow-sm border border-pink-100 text-pink-500 rounded-2xl mx-auto mb-4 flex items-center justify-center animate-bounce">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <h4 className="text-lg font-bold text-slate-800 mb-2">Partner's Note Locked</h4>
+                <p className="text-slate-500 mb-6 text-sm max-w-xs mx-auto">Your partner dropped a thought! Write yours to unlock it.</p>
+                <button onClick={onWriteJournal} className="bg-pink-500 hover:bg-pink-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg shadow-pink-200 transition-all flex items-center justify-center mx-auto space-x-2 transform hover:-translate-y-0.5 active:scale-95">
+                  <Unlock className="w-5 h-5" />
+                  <span>Tell Your Story to Unlock</span>
+                </button>
+              </div>
+            )}
+            {myJournal && !partnerJournal && (
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-pink-50/50 p-6 rounded-2xl border border-pink-100 shadow-sm">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-bold text-xs">{myJournal.partner_name.charAt(0)}</div>
+                    <span className="text-xs font-bold text-pink-500 uppercase tracking-wider">{myJournal.partner_name}</span>
+                  </div>
+                  <p className="text-slate-700 italic font-medium leading-relaxed">"{myJournal.content}"</p>
+                </div>
+                <div className="bg-slate-50 p-6 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-center">
+                  <Clock className="w-8 h-8 text-slate-300 mb-3 animate-pulse" />
+                  <p className="text-slate-500 text-sm font-medium">Waiting for partner's entry...</p>
+                </div>
+              </div>
+            )}
+            {myJournal && partnerJournal && (
+              <div className="grid md:grid-cols-2 gap-6 relative">
+                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1.5 rounded-full text-xs font-bold flex items-center shadow-md z-10 animate-fade-in">
+                   <Unlock className="w-3.5 h-3.5 mr-1.5" /> Vault Unlocked
+                 </div>
+                <div className="bg-pink-50/80 p-6 rounded-2xl border border-pink-100 shadow-sm pt-8">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-pink-200 flex items-center justify-center text-pink-600 font-bold text-xs">{myJournal.partner_name.charAt(0)}</div>
+                    <span className="text-xs font-bold text-pink-500 uppercase tracking-wider">{myJournal.partner_name}</span>
+                  </div>
+                  <p className="text-slate-700 italic font-medium leading-relaxed">"{myJournal.content}"</p>
+                </div>
+                <div className="bg-purple-50/80 p-6 rounded-2xl border border-purple-100 shadow-sm pt-8">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-200 flex items-center justify-center text-purple-600 font-bold text-xs">{partnerJournal.partner_name.charAt(0)}</div>
+                    <span className="text-xs font-bold text-purple-500 uppercase tracking-wider">{partnerJournal.partner_name}</span>
+                  </div>
+                  <p className="text-slate-700 italic font-medium leading-relaxed">"{partnerJournal.content}"</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* --- FILTER TOGGLE MENU --- */}
@@ -397,7 +688,7 @@ const Dashboard = ({ coupleId, partnerName, data, onStart, onLogout, onOpenVisua
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#fdf2f8" />
                   <XAxis dataKey="date" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} padding={{ left: 10, right: 10 }} />
                   <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} width={30} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fbcfe8', strokeWidth: 2, strokeDasharray: '5 5' }} />
                   <Legend verticalAlign="top" height={36} iconType="circle" />
 
                   {/* The COMBINED Line (Thick & Green) */}
@@ -478,14 +769,22 @@ function TrackerApp() {
   const [partnerName, setPartnerName] = useState(() => localStorage.getItem('p_name') || '');
   const [view, setView] = useState('dashboard');
   const [assessments, setAssessments] = useState([]);
+  const [journals, setJournals] = useState([]);
 
   // FETCH DATA
   const fetchData = async () => {
     if (!coupleId) return;
     try {
-      const { data, error } = await supabase.from('assessments').select('*').eq('couple_id', coupleId);
-      if (error) throw error;
-      setAssessments(data || []);
+      const [assessmentsRes, journalsRes] = await Promise.all([
+        supabase.from('assessments').select('*').eq('couple_id', coupleId),
+        supabase.from('journals').select('*').eq('couple_id', coupleId)
+      ]);
+      if (assessmentsRes.error) throw assessmentsRes.error;
+      // We log journals error but don't strictly throw if table isn't created yet by user
+      if (journalsRes.error) console.warn("Journals fetch warning:", journalsRes.error.message);
+      
+      setAssessments(assessmentsRes.data || []);
+      setJournals(journalsRes.data || []);
     } catch (err) {
       console.error("Fetch Error:", err);
     }
@@ -533,6 +832,37 @@ function TrackerApp() {
     setView('dashboard');
   };
 
+  const handleSaveJournal = async (content) => {
+    const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    
+    // Optimistic Update
+    const tempEntry = {
+      id: Date.now(),
+      couple_id: coupleId,
+      partner_name: partnerName,
+      content,
+      date,
+      created_at: new Date().toISOString()
+    };
+    setJournals(prev => [...prev, tempEntry]);
+
+    // Send to Supabase
+    const { error } = await supabase.from('journals').insert([{
+      couple_id: coupleId,
+      partner_name: partnerName,
+      content,
+      date
+    }]);
+
+    if(error){
+      console.error("Failed to save journal. Make sure the table exists!", error);
+      alert("Failed to save journal! Did you execute the SQL script in Supabase?");
+    }
+
+    await fetchData();
+    setView('dashboard');
+  };
+
   const handleLogin = (c, p) => {
     localStorage.setItem('c_id', c);
     localStorage.setItem('p_name', p);
@@ -545,15 +875,40 @@ function TrackerApp() {
     setCoupleId('');
     setPartnerName('');
     setAssessments([]);
+    setJournals([]);
+  };
+
+  // Get the user's personal latest score for AI coach
+  const getMyLatestScore = () => {
+    const myAssessments = assessments.filter(a => a.partner_name === partnerName);
+    return myAssessments.length > 0 ? myAssessments[myAssessments.length - 1].score : 18;
   };
 
   const renderContent = () => {
     if (loading) return <LoadingScreen />;
     if (!coupleId) return <LandingPage onJoin={handleLogin} />;
     if (view === 'assessment') return <Assessment onComplete={handleSave} onCancel={() => setView('dashboard')} />;
+    if (view === 'journal') return (
+      <JournalWriter 
+        onComplete={handleSaveJournal} 
+        onCancel={() => setView('dashboard')} 
+        partnerName={partnerName}
+        score={getMyLatestScore()}
+        recentJournals={journals}
+      />
+    );
     if (view === 'visualizer') return <LyricsVisualizer onBack={() => setView('dashboard')} coupleId={coupleId} partnerName={partnerName} />;
 
-    return <Dashboard coupleId={coupleId} partnerName={partnerName} data={assessments} onStart={() => setView('assessment')} onLogout={handleLogout} onOpenVisualizer={() => setView('visualizer')} />;
+    return <Dashboard 
+      coupleId={coupleId} 
+      partnerName={partnerName} 
+      data={assessments} 
+      journals={journals}
+      onStart={() => setView('assessment')} 
+      onWriteJournal={() => setView('journal')}
+      onLogout={handleLogout} 
+      onOpenVisualizer={() => setView('visualizer')} 
+    />;
   };
 
   return (
@@ -565,6 +920,7 @@ function TrackerApp() {
   );
 }
 
+// The public experience mounts independently of the dashboard and its data requests.
 export default function App() {
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {

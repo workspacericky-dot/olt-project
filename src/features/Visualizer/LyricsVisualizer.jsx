@@ -476,7 +476,7 @@ const LyricsVisualizer = ({ onBack, coupleId, partnerName }) => {
                 {/* Player Controls */}
                 {isReady && (
                     <PlayerControls
-                        audioRef={audioRef}
+                        audioRef={vibeStream ? null : audioRef}
                         isPlaying={isPlaying}
                         onPlayPause={handlePlayPause}
                         onReplay={handleReplay}
