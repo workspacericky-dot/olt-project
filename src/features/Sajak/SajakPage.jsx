@@ -138,7 +138,7 @@ export default function SajakPage() {
         {Array.from({ length: 12 }, (_, i) => <i key={i} className="sajak-petal" style={{ '--i': i }} />)}
       </div>
       <header className="sajak-header">
-        <a href="#" className="sajak-back"><ArrowLeft size={17} /> Kembali ke OLT</a>
+        <a href="#/love/sajak" className="sajak-back"><ArrowLeft size={17} /> Kembali ke Sajak</a>
         <span className="sajak-brand"><Heart size={16} /> <span>Our Love Tracker</span></span>
       </header>
 

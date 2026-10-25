@@ -9,6 +9,7 @@ import BGMusic from './components/BGMusic';
 import { startCoachSession, sendCoachMessage } from './utils/geminiCoach';
 
 const SajakPage = lazy(() => import('./features/Sajak/SajakPage'));
+const LoveLibrary = lazy(() => import('./features/LoveLibrary/LoveLibrary'));
 
 // --- 1. CONFIGURATION ---
 const supabase = createClient(
@@ -134,9 +135,9 @@ const LandingPage = ({ onJoin }) => {
               <ArrowRight className="w-5 h-5" />
             </button>
           </form>
-          <a href="#/sajak" className="mt-6 flex items-center gap-4 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left transition-all hover:bg-pink-100 hover:shadow-md focus-visible:outline-pink-500">
+          <a href="#/love" className="mt-6 flex items-center gap-4 rounded-2xl border border-pink-100 bg-pink-50/60 p-4 text-left transition-all hover:bg-pink-100 hover:shadow-md focus-visible:outline-pink-500">
             <span className="relative rounded-xl bg-white p-3 text-pink-500 shadow-sm"><MailOpen className="h-5 w-5" /><Heart className="absolute left-1/2 top-[11px] h-2.5 w-2.5 -translate-x-1/2 fill-pink-500 stroke-white stroke-[1.5]" /></span>
-            <span className="flex-1"><span className="block font-bold text-slate-800">Sajak untukmu</span><span className="mt-1 block text-xs text-slate-500">Kalau ada waktu, sempetin baca ya sayang</span></span>
+            <span className="flex-1"><span className="block font-bold text-slate-800">Love you sayangg</span><span className="mt-1 block text-xs text-slate-500">Ada sajak dan lagu untukmu, sayang</span></span>
             <ChevronRight className="h-5 w-5 text-pink-400" />
           </a>
         </div>
@@ -930,5 +931,7 @@ export default function App() {
   }, []);
   return hash === '#/sajak'
     ? <Suspense fallback={<LoadingScreen />}><SajakPage /></Suspense>
+    : ['#/love', '#/love/sajak', '#/love/musik', '#/love/musik/melukis-senja'].includes(hash)
+    ? <Suspense fallback={<LoadingScreen />}><LoveLibrary route={hash} /></Suspense>
     : <TrackerApp />;
 }
