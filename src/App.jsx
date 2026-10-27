@@ -931,7 +931,7 @@ export default function App() {
   }, []);
   return hash === '#/sajak'
     ? <Suspense fallback={<LoadingScreen />}><SajakPage /></Suspense>
-    : ['#/love', '#/love/sajak', '#/love/musik', '#/love/musik/melukis-senja'].includes(hash)
+    : ['#/love', '#/love/sajak', '#/love/musik', '#/love/musik/masih-sayang-ica', '#/love/musik/melukis-senja', '#/love/musik/aku-yang-jatuh-cinta'].includes(hash)
     ? <Suspense fallback={<LoadingScreen />}><LoveLibrary route={hash} /></Suspense>
     : <TrackerApp />;
 }
